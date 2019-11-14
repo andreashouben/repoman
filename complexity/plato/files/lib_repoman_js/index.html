@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Plato - lib/repoman.js</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="">
+  <meta name="author" content="">
+
+  <!--[if lt IE 9]>
+  <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+
+  <link href="../../assets/css/vendor/morris.css" rel="stylesheet">
+  <link href="../../assets/css/vendor/bootstrap.css" rel="stylesheet">
+  <link href="../../assets/css/vendor/font-awesome.css" rel="stylesheet">
+  <link href="../../assets/css/vendor/codemirror.css" rel="stylesheet">
+  <link href="../../assets/css/plato.css" rel="stylesheet">
+  <link href="../../assets/css/plato-file.css" rel="stylesheet">
+
+</head>
+
+<body>
+
+<div class="navbar navbar-fixed-top">
+  <div class="container">
+    <a class="navbar-brand" href="http://github.com/es-analysis/plato">Plato on Github</a>
+    <ul class="nav navbar-nav">
+      <li>
+        <a href="../../index.html">Report Home</a>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<div class="jumbotron">
+  <div class="container">
+    <h1>lib/repoman.js</h1>
+  </div>
+</div>
+
+<div class="container aggregate-stats">
+  <div class="row">
+    <div class="col-md-6">
+      <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
+      <p class="stat">67.82</p>
+    </div>
+    <div class="col-md-6">
+      <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
+      <p class="stat">542</p>
+    </div>
+  </div>
+  <div class="row historical">
+    <div class="col-md-6">
+      <p id="chart_historical_maint" class="chart"></p>
+    </div>
+    <div class="col-md-6">
+      <p id="chart_historical_sloc" class="chart"></p>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-6">
+      <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
+      <p class="stat">53.11</p>
+    </div>
+    <div class="col-md-6">
+      <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
+      <p class="stat">4.87</p>
+    </div>
+  </div>
+</div>
+
+<div class="container charts">
+  <div class="row">
+    <h2 class="header">Function weight</h2>
+  </div>
+  <div class="row">
+    <div class="col-md-6">
+      <h3 class="chart-header">By Complexity <a href="http://en.wikipedia.org/wiki/Cyclomatic_complexity"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="This metric counts the number of distinct paths through a block of code. Lower values are better." data-original-title="Cyclomatic Complexity" data-container="body"></i></a></h3>
+      <div id="fn-by-complexity" class="stat"></div>
+    </div>
+    <div class="col-md-6">
+      <h3 class="chart-header">By SLOC  <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h3>
+      <div id="fn-by-sloc" class="stat"></div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="row">
+    <textarea id="file-source" class="col-md-12">var _ = require(&#039;lodash&#039;);
+var async = require(&#039;async&#039;);
+var bag = require(&#039;bagofcli&#039;);
+var colors = require(&#039;colors/safe&#039;);
+var fs = require(&#039;fs&#039;);
+var fsx = require(&#039;fs.extra&#039;);
+var Bitbucket = require(&#039;./generator/bitbucket&#039;);
+var GitHub = require(&#039;./generator/github&#039;);
+var Gitorious = require(&#039;./generator/gitorious&#039;);
+var mustache = require(&#039;mustache&#039;);
+var Local = require(&#039;./generator/local&#039;);
+var os = require(&#039;os&#039;);
+var p = require(&#039;path&#039;);
+var Table = require(&#039;cli-table&#039;);
+
+const CONFIG_FILE = &#039;.repoman.json&#039;;
+const CHANGE_DIR_COMMAND =
+  &#039;cd &quot;{{{workspace}}}{{{pathseparator}}}{{{name}}}&quot; &amp;&amp; &#039;;
+
+/**
+ * @param {Object} repos repository name and details mapping (schemas/repoman.Schema)
+ * @param {Object} scms SCM details mapping (schemas/scms.Schema)
+ * @class
+ */
+function Repoman(repos, scms) {
+  this.repos = repos || {};
+  this.scms = scms || {};
+}
+
+/**
+ * Create an initial .repoman.json configuration file in current directory.
+ * If config options contains GitHub user or org, then configuration file will
+ * contain the corresponding GitHub projects.
+ *
+ * @param {Object} opts config options
+ * @param {Function} cb standard cb(err, result) callback
+ */
+Repoman.prototype.config = function(opts, cb) {
+  function _saveConfig(err, result) {
+    if (!err) {
+      if (fs.existsSync(CONFIG_FILE)) {
+        var existing = JSON.parse(fs.readFileSync(CONFIG_FILE, &#039;utf-8&#039;));
+        if (opts.removeExtraneous) {
+          existing = _.pick(existing, function(existingKey) {
+            return !!result[existingKey];
+          });
+        }
+        result = _.extend(existing, result);
+      }
+      fs.writeFile(CONFIG_FILE, JSON.stringify(result, null, 2), cb);
+    } else {
+      cb(err);
+    }
+  }
+
+  if (opts.bitbucket) {
+    console.log(
+      &#039;Setting configuration file: %s, with Bitbucket repositories&#039;,
+      CONFIG_FILE
+    );
+    var bitbucket = new Bitbucket(
+      opts.bitbucket.authUser,
+      opts.bitbucket.authPass
+    );
+    bitbucket.generate(_saveConfig);
+  } else if (opts.github) {
+    console.log(
+      &#039;Setting configuration file: %s, with GitHub repositories&#039;,
+      CONFIG_FILE
+    );
+    var github = new GitHub(
+      function() {
+        github.generate(
+          opts.github.user ? opts.github.user.split(&#039;,&#039;) : [],
+          opts.github.org ? opts.github.org.split(&#039;,&#039;) : [],
+          _saveConfig
+        );
+      },
+      opts.github.authUser,
+      opts.github.authPass,
+      opts.github.useSsh
+    );
+  } else if (opts.gitorious) {
+    console.log(
+      &#039;Setting configuration file: %s, with Gitorious repositories&#039;,
+      CONFIG_FILE
+    );
+    var gitorious = new Gitorious(opts.gitorious.url);
+    gitorious.generate(
+      opts.gitorious.project ? opts.gitorious.project.split(&#039;,&#039;) : [],
+      _saveConfig
+    );
+  } else if (opts.local) {
+    console.log(
+      &#039;Setting configuration file: %s, with local repositories&#039;,
+      CONFIG_FILE
+    );
+    var local = new Local(opts.local.dir);
+    local.generate(_saveConfig);
+  } else {
+    console.log(&#039;Creating sample configuration file: %s&#039;, CONFIG_FILE);
+    fsx.copy(p.join(__dirname, &#039;../examples/&#039; + CONFIG_FILE), CONFIG_FILE, cb);
+  }
+};
+
+/**
+ * Adds a given repository to the existing .repoman.json configuration file and clones the repo.
+ *
+ * @param {string} type the type of the repository, either &#039;git&#039; or &#039;svn&#039;
+ * @param {string} repositoryName the local name of the repository
+ * @param {string} url the remote url of the repository
+ * @param {Object} opts config options
+ * @param {Function} cb standard cb(err, result) callback
+ */
+Repoman.prototype.add = function(type, repositoryName, url, opts, cb) {
+  var newConfig = {
+    type: type,
+    url: url
+  };
+  _addToConfig(this, repositoryName, newConfig, opts, cb);
+};
+
+function _addToConfig(self, repositoryName, newConfig, opts, cb) {
+  var config;
+  if (fs.existsSync(CONFIG_FILE)) {
+    var existing = JSON.parse(fs.readFileSync(CONFIG_FILE, &#039;utf-8&#039;));
+    if (existing[repositoryName]) {
+      return cb(
+        new Error(
+          &#039;A configuration for &#039; +
+            repositoryName +
+            &quot; already exists, won&#039;t overwrite.&quot;
+        )
+      );
+    }
+    var configIncrement = {};
+    configIncrement[repositoryName] = newConfig;
+    config = _.extend(existing, configIncrement);
+  } else {
+    config = { [repositoryName]: newConfig };
+  }
+  fs.writeFile(CONFIG_FILE, JSON.stringify(config, null, 2), function(err) {
+    if (err) {
+      return cb(err);
+    }
+    var initCmd = self.scms[newConfig.type].init;
+    var renderedInitCmd = mustache.render(initCmd, {
+      name: repositoryName,
+      url: newConfig.url,
+      workspace: process.cwd(),
+      pathseparator: p.sep
+    });
+    if (opts.verbose) {
+      console.log(&#039;&gt; %s&#039;, renderedInitCmd);
+    }
+    bag.exec(renderedInitCmd, false, cb);
+  });
+}
+
+/**
+ * Removes a given repository from the existing .repoman.json configuration file and deletes the repo.
+ *
+ * @param {string} repositoryName the local name of the repository
+ * @param {Object} opts config options
+ * @param {Function} cb standard cb(err, result) callback
+ */
+Repoman.prototype.remove = function(repositoryName, opts, cb) {
+  _removeFromConfig(this, repositoryName, opts, cb);
+};
+
+function _removeFromConfig(self, repositoryName, opts, cb) {
+  var config;
+  if (fs.existsSync(CONFIG_FILE)) {
+    config = JSON.parse(fs.readFileSync(CONFIG_FILE, &#039;utf-8&#039;));
+    if (!config[repositoryName]) {
+      return cb(
+        new Error(
+          &#039;There is no entry in the configuration file for &#039; +
+            repositoryName +
+            &#039;, so there is nothing to remove.&#039;
+        )
+      );
+    }
+    delete config[repositoryName];
+  } else {
+    return cb(new Error(&#039;No config file &#039; + CONFIG_FILE + &#039;found.&#039;));
+  }
+  fs.writeFile(CONFIG_FILE, JSON.stringify(config, null, 2), function(err) {
+    if (err) {
+      return cb(err);
+    }
+    var deleteCmd = self.scms.git.delete;
+    var renderedDeleteCmd = mustache.render(deleteCmd, {
+      name: repositoryName,
+      workspace: process.cwd(),
+      pathseparator: p.sep
+    });
+    if (opts.verbose) {
+      console.log(&#039;&gt; %s&#039;, renderedDeleteCmd);
+    }
+    bag.exec(renderedDeleteCmd, false, cb);
+  });
+}
+
+/**
+ * Execute commands, once for each repository.
+ * Command is constructed based on the repository type and URL.
+ * If command is unsupported (i.e. it does not exist in conf/scms.json),
+ * the command will then be executed as-is.
+ *
+ * @param {String} command command to execute
+ * @param {Object} opts optional
+ * - failFast: if true then process will exit as soon as there&#039;s an error, false allows an error and resume with the next command
+ * - regex: regular expression string
+ * - tags: an array of tags, when defined then only repos with specified tags will be applied
+ * @param {Function} cb caolan/async cb(err, results) callback with results of each command execution
+ */
+Repoman.prototype.exec = function(command, opts, cb) {
+  opts = opts || {};
+
+  opts.failFast = opts.failFast || false;
+  opts.verbose = opts.verbose || false;
+
+  var dir = process.cwd();
+  var tasks = [];
+  var self = this;
+
+  _.each(this.repos, function(repo, name) {
+    if (self._selectRepo(repo, name, opts)) {
+      var repoType = self._determineRepoType(repo);
+      /* jshint ignore:start */
+      var fullCommand =
+        self.scms &amp;&amp; self.scms[repoType] &amp;&amp; self.scms[repoType][command]
+          ? self.scms[repoType][command]
+          : CHANGE_DIR_COMMAND + command;
+      /* jshint ignore:end */
+      var params = {
+        name: name,
+        url: repo.url,
+        workspace: dir,
+        pathseparator: p.sep
+      };
+
+      tasks.push(function(cb) {
+        console.log(&#039;\n+ %s&#039;, name);
+        var renderedCommand = mustache.render(fullCommand, params);
+        if (opts.verbose) {
+          console.log(&#039;&gt; %s&#039;, renderedCommand.replace(/^cd &quot;.+?&quot; &amp;&amp; /, &#039;&#039;));
+        }
+        bag.exec(renderedCommand, !opts.failFast, cb);
+      });
+    }
+  });
+
+  async.series(tasks, cb);
+};
+
+/**
+ * Create a report with a short one line status summary for each repository.
+ *
+ * @param {Object} opts optional
+ * - regex: regular expression string
+ * - tags: an array of tags, when defined then only repos with specified tags will be applied
+ * @param {Function} cb standard cb(err, result) callback
+ */
+Repoman.prototype.report = function(opts, mainCb) {
+  opts = opts || {};
+  opts.verbose = opts.verbose || false;
+
+  var dir = process.cwd();
+  var tasks = [];
+  var self = this;
+  var report = {};
+
+  _.each(this.repos, function(repo, name) {
+    initReport(report, name);
+    if (self._selectRepo(repo, name, opts)) {
+      var repoType = self._determineRepoType(repo);
+      var changeDir = mustache.render(CHANGE_DIR_COMMAND, {
+        name: name,
+        url: repo.url,
+        workspace: dir,
+        pathseparator: p.sep
+      });
+      var reportCommands = self.scms[repoType].report;
+      var getBranchNameCmd = changeDir + reportCommands.getBranchName;
+      var hasUncommittedCmd = changeDir + reportCommands.hasUncommitted;
+      var hasUnpushedCmd = changeDir + reportCommands.hasUnpushed;
+
+      addReportTask(tasks, getBranchNameCmd, report[name], &#039;branch&#039;);
+      addReportTask(tasks, hasUncommittedCmd, report[name], &#039;uncommitted&#039;);
+      addReportTask(tasks, hasUnpushedCmd, report[name], &#039;unpushed&#039;);
+    }
+  });
+  async.parallel(tasks, function(err) {
+    var formatted = formatReport(report);
+    mainCb(null, formatted);
+  });
+};
+
+function initReport(report, name) {
+  if (!report[name]) {
+    report[name] = {
+      name: name,
+      branch: &#039;unknown&#039;,
+      uncommitted: &#039;unknown&#039;,
+      unpushed: &#039;unknown&#039;
+    };
+  }
+}
+
+function addReportTask(tasks, command, reportItem, attribute) {
+  tasks.push(function(cb) {
+    bag.execAndCollect(command, false, function(
+      err,
+      stdOutOutput,
+      stdErrOutput,
+      result
+    ) {
+      if (err) {
+        console.error(err);
+      }
+      if (result) {
+        console.error(result);
+      }
+      if (stdErrOutput) {
+        console.error(stdErrOutput);
+      }
+      reportItem[attribute] = orDefault(stdOutOutput, reportItem[attribute]);
+      cb(null);
+    });
+  });
+}
+
+function orDefault(string, defaultValue) {
+  return string ? string : defaultValue;
+}
+
+function formatReport(report) {
+  var reportItems = _(report)
+    .values() // convert object to array
+    .sortBy(&#039;name&#039;) // sort alphabetically by name of repository
+    .value();
+  var widthRepoName = calcWidth(reportItems, &#039;name&#039;);
+  var widthBranchName = calcWidth(reportItems, &#039;branch&#039;);
+
+  // colorize needs to be called _after_ calcWidth, otherwise color codes will
+  // mess up width calculation
+  _.each(reportItems, colorize);
+
+  var reportTable = new Table({
+    head: [&#039;Repository&#039;, &#039;Branch&#039;, &#039;Uncommitted&#039;, &#039;Unpushed&#039;],
+    colWidths: [widthRepoName, widthBranchName, 13, 10],
+    chars: {
+      mid: &#039;&#039;,
+      &#039;left-mid&#039;: &#039;&#039;,
+      &#039;mid-mid&#039;: &#039;&#039;,
+      &#039;right-mid&#039;: &#039;&#039;
+    },
+    style: { head: [&#039;bold&#039;] }
+  });
+
+  // map each report item object to array
+  reportItems = _.map(reportItems, _.values);
+  // add items to table
+  _.each(reportItems, function(item) {
+    reportTable.push(item);
+  });
+
+  // return rendered table
+  return reportTable.toString();
+}
+
+function colorize(reportItem) {
+  if (reportItem.uncommitted === &#039;Dirty&#039; || reportItem.unpushed &gt; 0) {
+    reportItem.name = colors.red(reportItem.name);
+  } else {
+    reportItem.name = colors.green(reportItem.name);
+  }
+  if (reportItem.uncommitted === &#039;Dirty&#039;) {
+    reportItem.uncommitted = colors.red(reportItem.uncommitted);
+  } else {
+    reportItem.uncommitted = colors.green(reportItem.uncommitted);
+  }
+  if (reportItem.unpushed === &#039;N. A.&#039;) {
+    // no color
+  } else if (reportItem.unpushed &gt; 0) {
+    reportItem.unpushed = colors.red(reportItem.unpushed);
+  } else {
+    reportItem.unpushed = colors.green(reportItem.unpushed);
+  }
+}
+
+function calcWidth(reportItems, attribute) {
+  var maxWidth =
+    _(reportItems)
+      .map(attribute) // get attribute (e. g. &quot;branchname) from report items
+      .map(_.size) // map all strings to their length
+      .max() + 2; // find maximum string length for attribute, add two for left and right padding
+  maxWidth = Math.max(maxWidth, 5);
+  maxWidth = Math.min(maxWidth, 40);
+  return maxWidth;
+}
+
+/**
+ * Get a list of repository names.
+ *
+ * @param {Object} opts optional
+ * - regex: regular expression string
+ * - tags: an array of tags, when defined then only repos with specified tags will be applied
+ * @param {Function} cb standard cb(err, result) callback
+ */
+Repoman.prototype.list = function(opts, cb) {
+  var repos = [];
+  var self = this;
+  _.each(this.repos, function(repo, name) {
+    if (self._selectRepo(repo, name, opts)) {
+      repos.push(name);
+    }
+  });
+  cb(null, repos);
+};
+
+/**
+ * Remove directories in workspace which are not configured in .repoman.json file.
+ *
+ * @param {Boolean} dryRun if true then only display a list of files/directories which will be deleted,
+ *     otherwise really remove those files and directories
+ * @param {Function} cb standard cb(err, result) callback
+ */
+Repoman.prototype.clean = function(dryRun, cb) {
+  function _dryRun(files, cb) {
+    files = _.filter(files, function(file) {
+      return !file.match(/^\..+/);
+    });
+    cb(null, _.difference(files, _.keys(self.repos)));
+  }
+
+  function _delete(files, cb) {
+    var tasks = [];
+    files.forEach(function(file) {
+      if (!self.repos[file] &amp;&amp; !file.match(/^\..+/)) {
+        tasks.push(function(cb) {
+          console.log(&#039;- %s has been deleted&#039;, file);
+          fsx.remove(file, cb);
+        });
+      }
+    });
+    async.parallel(tasks, cb);
+  }
+
+  var self = this;
+  fs.readdir(process.cwd(), function(err, files) {
+    if (!err) {
+      if (dryRun) {
+        _dryRun(files, cb);
+      } else {
+        _delete(files, cb);
+      }
+    } else {
+      cb(err, files);
+    }
+  });
+};
+
+/**
+ * Determine repository type in this order:
+ * 1. Use repo.type if provided in configuration file
+ * 2. Check the existence of certain keyword in repository URL
+ * 3. If type still can&#039;t be determined, default to git
+ *
+ * @param {Object} repo repository object, must contain URL, type is optional
+ * @return {String} repository type
+ */
+Repoman.prototype._determineRepoType = function(repo) {
+  function _checkKeywords() {
+    var keywords = {
+        git: [&#039;git&#039;],
+        svn: [&#039;svn&#039;, &#039;subversion&#039;]
+      },
+      types = _.keys(keywords),
+      type;
+    for (var i = 0, iln = types.length; i &lt; iln; i += 1) {
+      for (var j = 0, jln = keywords[types[i]].length; j &lt; jln; j += 1) {
+        if (repo.url.indexOf(keywords[types[i]][j]) &gt;= 0) {
+          type = types[i];
+          break;
+        }
+      }
+    }
+    return type;
+  }
+
+  var repoType;
+  if (repo.type) {
+    repoType = repo.type;
+  } else {
+    repoType = _checkKeywords();
+    if (!repoType) {
+      repoType = &#039;git&#039;;
+    }
+  }
+
+  return repoType;
+};
+
+/**
+ * Select a repo by tags and regex.
+ * If a tag or a regex is not supplied,
+ * then the selection criteria is considered to be unnecessary.
+ *
+ * @param {Object} repo repository object, must contain URL, type is optional
+ * @param {String} name repository name, used by regex matching
+ * @return {Boolean} true if passed selection criteria
+ */
+Repoman.prototype._selectRepo = function(repo, name, opts) {
+  function selectByTags(repo) {
+    var isSelected = true;
+    if (
+      !_.isEmpty(opts.tags) &amp;&amp;
+      (_.isEmpty(repo.tags) || _.isEmpty(_.intersection(opts.tags, repo.tags)))
+    ) {
+      isSelected = false;
+    }
+    return isSelected;
+  }
+
+  function selectByRegex(repo, name) {
+    var isSelected = true;
+    if (opts.regex) {
+      var re = new RegExp(opts.regex);
+      if (!name.match(re) &amp;&amp; !repo.url.match(re)) {
+        isSelected = false;
+      }
+    }
+    return isSelected;
+  }
+
+  return selectByTags(repo) &amp;&amp; selectByRegex(repo, name);
+};
+
+module.exports = Repoman;</textarea>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <p>.</p>
+  </div>
+</footer>
+
+<script type="text/html" id="complexity-popover-template">
+  <div class="complexity-notice">
+    Complexity : {{ cyclomatic }} <br>
+    Length : {{ halstead.length }} <br>
+    Difficulty : {{ halstead.difficulty.toFixed(2) }} <br>
+    Est # bugs : {{ halstead.bugs.toFixed(2) }}<br>
+  </div>
+</script>
+
+<script type="text/javascript" src="../../assets/scripts/bundles/core-bundle.js"></script>
+<script type="text/javascript" src="../../assets/scripts/bundles/codemirror.js"></script>
+<script type="text/javascript" src="../../assets/scripts/codemirror.markpopovertext.js"></script>
+<script type="text/javascript" src="report.js"></script>
+<script type="text/javascript" src="report.history.js"></script>
+<script type="text/javascript" src="../../assets/scripts/plato-file.js"></script>
+</body>
+</html>

@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for lib/auth/github.js</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../prettify.css" />
+    <link rel="stylesheet" href="../../base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="../../index.html">All files</a> / <a href="index.html">lib/auth</a> github.js
+    </h1>
+    <div class='clearfix'>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">45.24% </span>
+        <span class="quiet">Statements</span>
+        <span class='fraction'>19/42</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">20% </span>
+        <span class="quiet">Branches</span>
+        <span class='fraction'>3/15</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">33.33% </span>
+        <span class="quiet">Functions</span>
+        <span class='fraction'>4/12</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">45.24% </span>
+        <span class="quiet">Lines</span>
+        <span class='fraction'>19/42</span>
+      </div>
+    </div>
+  </div>
+  <div class='status-line low'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95</td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">var bag = require('bagofrequest');
+var github = require('@octokit/rest');
+var url = require('url');
+var dotfile = require('dotfile')('repomanrc');
+var BluePromise = require('bluebird');
+&nbsp;
+/**
+ * Configuration generator for remote GitHub repositories.
+ *
+ * @param {String} user: GitHub username
+ * @param {String} pass: GitHub password
+ * @class
+ */
+function GithubAuth() {
+  var opts = {
+    version: '3.0.0',
+    timeout: 30000
+  };
+&nbsp;
+  var proxy = bag.proxy();
+  if (proxy) {
+    proxy = url.parse(proxy);
+    opts.proxy = {
+      host: proxy.hostname,
+      port: proxy.port
+    };
+  }
+&nbsp;
+  this.gh = new github(opts);
+}
+&nbsp;
+GithubAuth.prototype.authBasic = <span class="fstat-no" title="function not covered" >fu</span>nction(user, pass) {
+<span class="cstat-no" title="statement not covered" >  return this.gh.authenticate({</span>
+    type: 'basic',
+    username: user,
+    password: pass
+  });
+};
+&nbsp;
+GithubAuth.prototype.fetchAndStoreAuthToken = <span class="fstat-no" title="function not covered" >fu</span>nction(optionalTwoFactor) {
+  var self = <span class="cstat-no" title="statement not covered" >this;</span>
+<span class="cstat-no" title="statement not covered" >  return new BluePromise(<span class="fstat-no" title="function not covered" >fu</span>nction(s, f) {</span>
+    var headers = <span class="cstat-no" title="statement not covered" >{};</span>
+<span class="cstat-no" title="statement not covered" >    if (optionalTwoFactor) {</span>
+<span class="cstat-no" title="statement not covered" >      headers['X-GitHub-OTP'] = optionalTwoFactor;</span>
+    }
+<span class="cstat-no" title="statement not covered" >    self.gh.authorization.create(</span>
+      {
+        scopes: ['user', 'public_repo', 'repo', 'repo:status', 'gist'],
+        note: 'read repos for repoman4',
+        headers: headers
+      },
+<span class="fstat-no" title="function not covered" >      fu</span>nction(err, res) {
+<span class="cstat-no" title="statement not covered" >        if (res &amp;&amp; res.data &amp;&amp; res.data.token) {</span>
+<span class="cstat-no" title="statement not covered" >          self.ghToken = res.data.token;</span>
+<span class="cstat-no" title="statement not covered" >          console.log('got Github auth token');</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >          dotfile.exists(<span class="fstat-no" title="function not covered" >fu</span>nction(yesno) {</span>
+<span class="cstat-no" title="statement not covered" >            dotfile.write({ githubAuthToken: self.ghToken }, <span class="fstat-no" title="function not covered" >fu</span>nction(err) {</span>
+<span class="cstat-no" title="statement not covered" >              dotfile.read(<span class="fstat-no" title="function not covered" >fu</span>nction(err, disk) {</span>
+<span class="cstat-no" title="statement not covered" >                console.log('saved Github auth');</span>
+<span class="cstat-no" title="statement not covered" >                console.log(disk);</span>
+<span class="cstat-no" title="statement not covered" >                s();</span>
+              });
+            });
+          });
+        } else <span class="cstat-no" title="statement not covered" >if (err) {</span>
+<span class="cstat-no" title="statement not covered" >          console.log(err);</span>
+<span class="cstat-no" title="statement not covered" >          f(err);</span>
+        }
+      }
+    );
+  });
+};
+&nbsp;
+GithubAuth.prototype.readAuthToken = function() {
+  return new BluePromise(function(s, f) {
+    dotfile.exists(function(yesno) {
+      <span class="missing-if-branch" title="if path not taken" >I</span>if (yesno) {
+<span class="cstat-no" title="statement not covered" >        dotfile.read(<span class="fstat-no" title="function not covered" >fu</span>nction(err, disk) {</span>
+<span class="cstat-no" title="statement not covered" >          if (disk.githubAuthToken) {</span>
+<span class="cstat-no" title="statement not covered" >            s(disk.githubAuthToken);</span>
+          } else {
+<span class="cstat-no" title="statement not covered" >            f(new Error('no auth token in dotfile'));</span>
+          }
+        });
+      } else {
+        f(new Error('no dotfile'));
+      }
+    });
+  });
+};
+&nbsp;
+module.exports = GithubAuth;
+&nbsp;</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="https://istanbul.js.org/" target="_blank">istanbul</a> at Thu Nov 14 2019 17:06:22 GMT+0100 (Central European Standard Time)
+</div>
+</div>
+<script src="../../prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="../../sorter.js"></script>
+</body>
+</html>

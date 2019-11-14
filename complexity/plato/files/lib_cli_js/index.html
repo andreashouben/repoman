@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Plato - lib/cli.js</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="">
+  <meta name="author" content="">
+
+  <!--[if lt IE 9]>
+  <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+
+  <link href="../../assets/css/vendor/morris.css" rel="stylesheet">
+  <link href="../../assets/css/vendor/bootstrap.css" rel="stylesheet">
+  <link href="../../assets/css/vendor/font-awesome.css" rel="stylesheet">
+  <link href="../../assets/css/vendor/codemirror.css" rel="stylesheet">
+  <link href="../../assets/css/plato.css" rel="stylesheet">
+  <link href="../../assets/css/plato-file.css" rel="stylesheet">
+
+</head>
+
+<body>
+
+<div class="navbar navbar-fixed-top">
+  <div class="container">
+    <a class="navbar-brand" href="http://github.com/es-analysis/plato">Plato on Github</a>
+    <ul class="nav navbar-nav">
+      <li>
+        <a href="../../index.html">Report Home</a>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<div class="jumbotron">
+  <div class="container">
+    <h1>lib/cli.js</h1>
+  </div>
+</div>
+
+<div class="container aggregate-stats">
+  <div class="row">
+    <div class="col-md-6">
+      <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
+      <p class="stat">65.21</p>
+    </div>
+    <div class="col-md-6">
+      <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
+      <p class="stat">340</p>
+    </div>
+  </div>
+  <div class="row historical">
+    <div class="col-md-6">
+      <p id="chart_historical_maint" class="chart"></p>
+    </div>
+    <div class="col-md-6">
+      <p id="chart_historical_sloc" class="chart"></p>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-6">
+      <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
+      <p class="stat">48.54</p>
+    </div>
+    <div class="col-md-6">
+      <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
+      <p class="stat">3.02</p>
+    </div>
+  </div>
+</div>
+
+<div class="container charts">
+  <div class="row">
+    <h2 class="header">Function weight</h2>
+  </div>
+  <div class="row">
+    <div class="col-md-6">
+      <h3 class="chart-header">By Complexity <a href="http://en.wikipedia.org/wiki/Cyclomatic_complexity"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="This metric counts the number of distinct paths through a block of code. Lower values are better." data-original-title="Cyclomatic Complexity" data-container="body"></i></a></h3>
+      <div id="fn-by-complexity" class="stat"></div>
+    </div>
+    <div class="col-md-6">
+      <h3 class="chart-header">By SLOC  <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h3>
+      <div id="fn-by-sloc" class="stat"></div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="row">
+    <textarea id="file-source" class="col-md-12">var _ = require(&#039;lodash&#039;);
+var bag = require(&#039;bagofcli&#039;);
+var fs = require(&#039;fs&#039;);
+var p = require(&#039;path&#039;);
+var prompt = require(&#039;prompt&#039;);
+var prompts = require(&#039;prompts&#039;);
+var Repoman = require(&#039;./repoman&#039;);
+var GithubAuth = require(&#039;./auth/github&#039;);
+
+/**
+ * Repoman CLI module.
+ * @module cli
+ */
+
+function _config(args) {
+  var opts = {};
+
+  if (args.removeExtraneous) {
+    opts.removeExtraneous = true;
+  }
+
+  if (args.bitbucketAuthUser || args.bitbucketAuthPass) {
+    opts.bitbucket = {
+      authUser: args.bitbucketAuthUser,
+      authPass: args.bitbucketAuthPass
+    };
+  } else if (
+    args.githubUser ||
+    args.githubOrg ||
+    args.githubAuthUser ||
+    args.githubAuthPass
+  ) {
+    opts.github = {
+      user: args.githubUser,
+      org: args.githubOrg,
+      authUser: args.githubAuthUser,
+      authPass: args.githubAuthPass,
+      useSsh: args.githubUseSsh
+    };
+  } else if (args.gitoriousUrl || args.gitoriousProject) {
+    opts.gitorious = {
+      url: args.gitoriousUrl,
+      project: args.gitoriousProject
+    };
+  } else if (args.local) {
+    opts.local = {
+      dir: process.cwd()
+    };
+  }
+
+  new Repoman().config(opts, bag.exit);
+}
+
+function _add(args) {
+  var type = args.type;
+  var name = args.repositoryName || args.name;
+  if (typeof name === &#039;function&#039;) {
+    name = null;
+  }
+  var url = args.url;
+
+  if (!!type &amp;&amp; type !== &#039;git&#039; &amp;&amp; type !== &#039;svn&#039;) {
+    console.error(&#039;Unknown --type &quot;&#039; + type + &#039;&quot;.&#039;);
+    process.exit(1);
+  }
+  if (!type) {
+    console.log(&#039;No --type specified, will assume &quot;git&quot;.&#039;);
+    type = &#039;git&#039;;
+  }
+  if (!url) {
+    console.error(&#039;You need to provide the mandatory parameter --url.&#039;);
+    process.exit(1);
+  }
+  if (!name &amp;&amp; type === &#039;git&#039;) {
+    nameMatch = /^.*\/(.*)\.git/.exec(url);
+    if (nameMatch) {
+      name = nameMatch[1];
+      console.log(
+        &#039;You have given no --repository-name (or --name), I have tried to figure it out from the given --url and arrived at &quot;&#039; +
+          name +
+          &#039;&quot;.&#039;
+      );
+    }
+  }
+  if (!name) {
+    console.error(
+      &#039;You have given no --repository-name (or --name) and I have not been able to figure it out from the given --url. Please provide the name explicitly.&#039;
+    );
+    process.exit(1);
+  }
+
+  var opts = { verbose: args.parent.verbose };
+  createRepomanInstance(args).add(type, name, url, opts, function(err) {
+    if (err) {
+      return bag.exit(err);
+    } else {
+      console.log(name + &#039;: &#039; + url + &#039; has been added.&#039;);
+      return bag.exit(err);
+    }
+  });
+}
+
+function _remove(args) {
+  var name = args.repositoryName || args.name;
+  if (typeof name === &#039;function&#039;) {
+    name = null;
+  }
+
+  if (!name) {
+    console.error(
+      &#039;You need to provide the mandatory parameter --name (or --repository-name).&#039;
+    );
+    process.exit(1);
+  }
+
+  if (args.force) {
+    _reallyRemove(args, name);
+  } else {
+    prompts({
+      type: &#039;confirm&#039;,
+      name: &#039;confirmed&#039;,
+      message:
+        &#039;This will delete the folder &#039; +
+        name +
+        &#039; from your disk, are you sure you want to do this?&#039;,
+      initial: true
+    }).then(function(response) {
+      if (response &amp;&amp; response.confirmed) {
+        _reallyRemove(args, name);
+      } else {
+        process.exit(0);
+      }
+    });
+  }
+}
+
+function _reallyRemove(args, name) {
+  var opts = { verbose: args.parent.verbose };
+  createRepomanInstance(args).remove(name, opts, function(err) {
+    if (err) {
+      return bag.exit(err);
+    } else {
+      console.log(name + &#039; has been removed.&#039;);
+      return bag.exit(err);
+    }
+  });
+}
+
+function _signin(args) {
+  prompt.start();
+  const authOpts = {};
+  prompt.get([&#039;Enter your Github username&#039;], function(err, result) {
+    authOpts.username = result[&#039;Enter your Github username&#039;];
+    prompt.get([&#039;Enter your Github password&#039;], function(err, result) {
+      authOpts.password = result[&#039;Enter your Github password&#039;];
+      var ghAuth = new GithubAuth();
+      ghAuth.authBasic(authOpts.username, authOpts.password);
+      ghAuth.fetchAndStoreAuthToken(authOpts.twoFactor).catch(function(e) {
+        if (
+          e &amp;&amp;
+          e.code === 401 &amp;&amp;
+          e.message &amp;&amp;
+          e.message.indexOf(&#039;two-factor&#039;) !== -1
+        ) {
+          prompt.get([&#039;Enter your Github two factor auth code&#039;], function(
+            err,
+            result
+          ) {
+            ghAuth.fetchAndStoreAuthToken(
+              result[&#039;Enter your Github two factor auth code&#039;]
+            );
+          });
+        }
+      });
+    });
+  });
+}
+
+function _exec(command, args) {
+  var opts = {};
+
+  // repoman exec provides command and args as function arguments
+  // other &#039;exec&#039; commands (e.g. init, get) only provides args as the only function argument
+  if (!args) {
+    args = command;
+    command = args._name;
+  }
+
+  opts.failFast = args.parent.failFast;
+  opts.verbose = args.parent.verbose;
+  opts.regex = args.parent.regex;
+  if (args.parent.tags) {
+    opts.tags = args.parent.tags.split(&#039;,&#039;);
+  }
+
+  createRepomanInstance(args).exec(command, opts, bag.exit);
+}
+
+function _report(command, args) {
+  var opts = {};
+
+  if (!args) {
+    args = command;
+    command = args._name;
+  }
+
+  opts.verbose = args.parent.verbose;
+  opts.regex = args.parent.regex;
+  if (args.parent.tags) {
+    opts.tags = args.parent.tags.split(&#039;,&#039;);
+  }
+
+  createRepomanInstance(args).report(opts, function(err, result) {
+    if (err) {
+      return bag.exit(err);
+    } else {
+      // write formatted report to stdout
+      console.log(result);
+      return bag.exit();
+    }
+  });
+}
+
+function _list(args) {
+  var opts = {};
+  opts.regex = args.parent.regex;
+  if (args.parent.tags) {
+    opts.tags = args.parent.tags.split(&#039;,&#039;);
+  }
+
+  var config = loadConfigFile(args);
+  var repoman = new Repoman(config);
+
+  repoman.list(
+    opts,
+    bag.exitCb(null, function(result) {
+      result.forEach(function(name) {
+        console.log(name);
+      });
+    })
+  );
+}
+
+function _clean(args) {
+  var config = loadConfigFile(args);
+  var repoman = new Repoman(config);
+
+  function _confirm() {
+    prompt.start();
+    prompt.get([&#039;Are you sure? (Y/N)&#039;], function(err, result) {
+      var answer = result[&#039;Are you sure? (Y/N)&#039;];
+      answer = answer ? answer.toUpperCase() : &#039;N&#039;;
+      if (answer === &#039;Y&#039;) {
+        repoman.clean(false, bag.exit);
+      } else {
+        console.log(&#039;Nothing is deleted&#039;);
+        process.exit(0);
+      }
+    });
+  }
+
+  repoman.clean(true, function(err, result) {
+    if (!err) {
+      if (!_.isEmpty(result)) {
+        console.log(
+          &#039;The following files/directories will be deleted: %s&#039;,
+          result.join(&#039;, &#039;)
+        );
+        _confirm();
+      } else {
+        console.log(&#039;Nothing to delete&#039;);
+        process.exit(0);
+      }
+    } else {
+      bag.exit(err, result);
+    }
+  });
+}
+
+function createRepomanInstance(args) {
+  var platform = args.parent.platform || process.platform;
+  var scmsFile = platform === &#039;win32&#039; ? &#039;scms-win32.json&#039; : &#039;scms.json&#039;;
+  var scms = JSON.parse(
+    fs.readFileSync(p.join(__dirname, &#039;../conf/&#039; + scmsFile))
+  );
+  var config = loadConfigFile(args);
+  return new Repoman(config, scms);
+}
+
+function loadConfigFile(args) {
+  /* jshint ignore:start */
+  var configFile =
+    args &amp;&amp; args.parent &amp;&amp; args.parent.configFile
+      ? args.parent.configFile
+      : &#039;.repoman.json&#039;;
+  /* jshint ignore:end */
+  try {
+    return JSON.parse(bag.lookupFile(configFile));
+  } catch (e) {
+    if (
+      e.name === &#039;Error&#039; &amp;&amp;
+      e.message &amp;&amp;
+      e.message.indexOf(&#039;Unable to lookup file in &#039;) &gt;= 0
+    ) {
+      console.error(&#039;Config file .repoman.json does not exist.&#039;);
+      console.error(e.message);
+      process.exit(1);
+    } else {
+      throw e;
+    }
+  }
+}
+
+function exec() {
+  var actions = {
+    commands: {
+      config: { action: _config },
+      add: { action: _add },
+      remove: { action: _remove },
+      delete: { action: _exec },
+      init: { action: _exec },
+      get: { action: _exec },
+      changes: { action: _exec },
+      report: { action: _report },
+      save: { action: _exec },
+      undo: { action: _exec },
+      exec: { action: _exec },
+      list: { action: _list },
+      clean: { action: _clean },
+      signin: { action: _signin }
+    }
+  };
+
+  bag.command(__dirname, actions);
+}
+
+/**
+ * Execute a Repoman command line command.
+ */
+exports.exec = exec;</textarea>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <p>.</p>
+  </div>
+</footer>
+
+<script type="text/html" id="complexity-popover-template">
+  <div class="complexity-notice">
+    Complexity : {{ cyclomatic }} <br>
+    Length : {{ halstead.length }} <br>
+    Difficulty : {{ halstead.difficulty.toFixed(2) }} <br>
+    Est # bugs : {{ halstead.bugs.toFixed(2) }}<br>
+  </div>
+</script>
+
+<script type="text/javascript" src="../../assets/scripts/bundles/core-bundle.js"></script>
+<script type="text/javascript" src="../../assets/scripts/bundles/codemirror.js"></script>
+<script type="text/javascript" src="../../assets/scripts/codemirror.markpopovertext.js"></script>
+<script type="text/javascript" src="report.js"></script>
+<script type="text/javascript" src="report.history.js"></script>
+<script type="text/javascript" src="../../assets/scripts/plato-file.js"></script>
+</body>
+</html>
